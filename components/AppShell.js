@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabaseClient'
+import { getSupabase } from '@/lib/supabaseClient'
+const supabase = getSupabase()
 
 const brand = {
   green: '#0E3A2F',
@@ -23,11 +24,12 @@ export default function AppShell() {
   const [lead, setLead] = useState(null)
   const [user, setUser] = useState(null)
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null))
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null))
-    return () => sub.subscription.unsubscribe()
-  }, [])
+ useEffect(() => {
+   if (!supabase) return
+   supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null))
+   const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => setUser(session?.user ?? null))
+   return () => sub?.subscription?.unsubscribe?.()
+}, [supabase])
 
   const go = (id) => () => setScreen(id)
 
@@ -39,15 +41,19 @@ export default function AppShell() {
     >{label}</button>
   )
 
-  const AuthButtons = () => (
-    <div className="flex items-center gap-2">
-      {user ? (
-        <button className="btn btn-outline" onClick={async()=>{ await supabase.auth.signOut(); }}>Sign out</button>
-      ) : (
-        <button className="btn btn-outline" onClick={go('login')}>Client Login</button>
-      )}
-    </div>
-  )
+ const AuthButtons = () => (
+   <div className="flex items-center gap-2">
+     {supabase ? (
+       user ? (
+         <button className="btn btn-outline" onClick={async()=>{ await supabase.auth.signOut(); }}>Sign out</button>
+       ) : (
+         <button className="btn btn-outline" onClick={go('login')}>Client Login</button>
+       )
+     ) : (
+       <span className="text-white/70 text-sm">Login unavailable</span>
+     )}
+   </div>
+ )
 
   return (
     <div className="min-h-screen" style={{ background: `linear-gradient(180deg, ${brand.green} 0%, #0C2F25 40%, ${brand.paper} 40%)` }}>
@@ -175,11 +181,13 @@ function Assurances() {
 }
 
 function LoginCard() {
+  const s = getSupabase()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const submit = async (e) => {
     e.preventDefault()
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined } })
+   if (!s) { alert('Login is temporarily disabled.'); return }
+   const { error } = await s.auth.signInWithOtp({ email, options: { emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined } })
     if (!error) setSent(true); else alert(error.message)
   }
   return (
@@ -330,18 +338,19 @@ function Detail({ label, value }) {
 }
 
 function ItineraryVault({ user }) {
+  const s = getSupabase()
   const [files, setFiles] = useState([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (!user) return
-    refresh()
-    // eslint-disable-next-line
-  }, [user])
+ useEffect(() => {
+   if (!s || !user) return
+   refresh()
+ }, [s, user])
 
   async function refresh() {
     setLoading(true)
-    const { data, error } = await supabase.storage.from('documents').list(user.id, { sortBy: { column: 'created_at', order: 'desc' } })
+    if (!s || !user) return
+   const { data, error } = await s.storage.from('documents').list(user.id, { sortBy: { column: 'created_at', order: 'desc' } })
     if (!error) setFiles(data || [])
     setLoading(false)
   }
@@ -357,11 +366,15 @@ function ItineraryVault({ user }) {
 
   async function openFile(name) {
     const path = `${user.id}/${name}`
-    const { data, error } = await supabase.storage.from('documents').createSignedUrl(path, 60*10)
+    if (!s || !user) return
+   const { error } = await s.storage.from('documents').upload(path, file, { upsert: false })
     if (error) return alert(error.message)
     window.open(data.signedUrl, '_blank')
   }
 
+   if (!s) {
+   return <div className="card p-8"><h3 className="text-2xl font-semibold mb-2">Itinerary Vault</h3><p className="text-sm text-black/70">Vault will be available once Supabase is configured.</p></div>
+ }
   if (!user) {
     return (
       <div className="card p-8">
