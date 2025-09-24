@@ -283,64 +283,36 @@ function QuoteForm({ onSubmitted }) {
 }
 
 function Proposal({ lead }) {
- const sample = useMemo(() => ({
-   title: '7-Night Caribbean Cruise (Celebrity)',
-   price: 'from £1,499 pp',
-   img: 'https://images.unsplash.com/photo-1526635090919-32716cdd4a8b?q=80&w=1400&auto=format&fit=crop',
-   inclusions: [...],
-   terms: 'Subject to availability...',
-   supplier: {
-     name: 'Celebrity Central',
-     cta: 'Book Now',
-     url: process.env.NEXT_PUBLIC_BOOK_URL || 'https://www.celebritycruises.co.uk' // put your deep-link here
-   },
-   askTo: (lead) => {
-     const inbox = process.env.NEXT_PUBLIC_SALES_INBOX || 'hello@lexvoyage.co';
-     const subj = `Question about: ${'7-Night Caribbean Cruise (Celebrity)'}`;
-     const body = `Hi LEXVOYAGE,%0D%0A%0D%0AMy name is ${encodeURIComponent(lead?.name || '')}. I have a question about this proposal.%0D%0A`;
-     return `mailto:${inbox}?subject=${encodeURIComponent(subj)}&body=${body}`;
-   }
- }), [])
-
-  return (
-    <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
-      <article className="card">
-        <div className="h-60" style={{ background: `url(${sample.img}) center/cover` }} />
-        <div className="p-6">
-          <h3 className="text-2xl font-semibold mb-1">{sample.title}</h3>
-          <div className="text-sm mb-3 text-[var(--brand-green)]">{sample.price}</div>
-          <ul className="grid sm:grid-cols-2 gap-2 mb-4">
-            {sample.inclusions.map((x) => (<li key={x} className="text-sm text-black/75">• {x}</li>))}
-          </ul>
-          <div className="flex items-center gap-3">
-          <a href={sample.supplier.url} target="_blank" rel="noopener" className="btn btn-primary">
-            {sample.supplier.cta}
-          </a>
-          <a href={sample.askTo(lead)} className="btn btn-outline">
-            Ask a question
-          </a>
-          </div>
-          <p className="text-xs text-black/60 mt-4">{sample.terms}</p>
-        </div>
-      </article>
-
-      <aside className="card">
-        <div className="p-6 border-b" style={{ borderColor: brand.stone }}>
-          <div className="text-sm text-[var(--brand-green)]">Client brief</div>
-          <div className="text-xs text-black/70">(from your quote request)</div>
-        </div>
-        <div className="p-6 text-sm">
-          <Detail label="Name" value={lead?.name || '—'} />
-          <Detail label="Dates" value={lead?.dates || '—'} />
-          <Detail label="Travellers" value={`${lead?.adults ?? '?'} adults, ${lead?.children ?? 0} children`} />
-          <Detail label="Budget" value={lead?.budget || '—'} />
-          <Detail label="Style" value={lead?.style || '—'} />
-          <Detail label="Interests" value={(lead?.interests || []).join(', ') || '—'} />
-        </div>
-      </aside>
-    </div>
-  )
-}
+const sample = useMemo(() => ({
+  title: '7-Night Caribbean Cruise (Celebrity)',
+  price: 'from £1,499 pp',
+  img: 'https://images.unsplash.com/photo-1526635090919-32716cdd4a8b?q=80&w=1400&auto=format&fit=crop',
+  inclusions: [
+    'Flights from London',
+    'All-inclusive dining',
+    'Private transfers',
+    'Balcony stateroom',
+  ],
+  terms:
+    'Subject to availability. Pricing may vary by date and cabin category. Supplier T&Cs apply.',
+  supplier: {
+    name: 'Celebrity Central',
+    cta: 'Book Now',
+    url:
+      process.env.NEXT_PUBLIC_BOOK_URL ||
+      'https://www.celebritycruises.co.uk',
+  },
+  askTo: (lead) => {
+    const inbox =
+      process.env.NEXT_PUBLIC_SALES_INBOX ||
+      'alexandravalencia.traveladvisor@gmail.com'
+    const subj = 'Question about: 7-Night Caribbean Cruise (Celebrity)'
+    const body = `Hi LEXVOYAGE,%0D%0A%0D%0AMy name is ${
+      encodeURIComponent(lead?.name || '')
+    }. I have a question about this proposal.%0D%0A`
+    return `mailto:${inbox}?subject=${encodeURIComponent(subj)}&body=${body}`
+  },
+}), [])
 
 function Detail({ label, value }) {
   return (
