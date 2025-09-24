@@ -356,7 +356,7 @@ function Proposal({ lead }) {
         cta: 'Book Now',
         url:
           process.env.NEXT_PUBLIC_BOOK_URL ||
-          'alexandravalencia.inteletravel.uk',
+          'https://alexandravalencia.inteletravel.uk/booktravel.cfm',
       },
       askTo: (currentLead) => {
         const inbox =
