@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-green: theme('colors.brand.green');
+  --brand-gold: theme('colors.brand.gold');
+  --brand-paper: theme('colors.brand.paper');
+}
+
+html, body, #__next { height: 100%; }
+body { background-color: var(--brand-paper); color: #0E0F11; }
+
+.container { @apply max-w-6xl mx-auto px-4; }
+.btn { @apply px-5 py-3 rounded-xl text-sm font-medium transition; }
+.btn-primary { background: var(--brand-gold); color: var(--brand-green); }
+.btn-outline { @apply border; border-color: var(--brand-green); color: var(--brand-green); }
+.card { @apply rounded-2xl shadow-card overflow-hidden bg-white; }
