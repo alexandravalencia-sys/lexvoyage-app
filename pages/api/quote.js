@@ -24,3 +24,25 @@ export default async function handler(req, res) {
   if (error) return res.status(500).json({ error: error.message })
   return res.status(200).json({ ok: true })
 }
+import { Resend } from 'resend';
+
+// ...
+const resendKey = process.env.RESEND_API_KEY;
+if (resendKey) {
+  const resend = new Resend(resendKey);
+  await resend.emails.send({
+    from: 'LEXVOYAGE <notify@lexvoyage.app>', // change after verifying your domain in Resend
+    to: process.env.SALES_INBOX,
+    subject: `New quote request — ${lead.name}`,
+    html: `
+      <h2>New quote request</h2>
+      <p><b>Name:</b> ${lead.name}</p>
+      <p><b>Email:</b> ${lead.email}</p>
+      <p><b>Dates:</b> ${lead.dates || '—'}</p>
+      <p><b>Travellers:</b> ${lead.adults ?? '?'} adults, ${lead.children ?? 0} children</p>
+      <p><b>Budget:</b> ${lead.budget || '—'}</p>
+      <p><b>Style:</b> ${lead.style || '—'}</p>
+      <p><b>Interests:</b> ${(lead.interests || []).join(', ') || '—'}</p>
+    `,
+  });
+}
