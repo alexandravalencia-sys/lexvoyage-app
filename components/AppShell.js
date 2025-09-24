@@ -356,14 +356,14 @@ function Proposal({ lead }) {
         cta: 'Book Now',
         url:
           process.env.NEXT_PUBLIC_BOOK_URL ||
-          'https://www.celebritycruises.co.uk',
+          'alexandravalencia.inteletravel.uk',
       },
       askTo: (currentLead) => {
         const inbox =
           process.env.NEXT_PUBLIC_SALES_INBOX ||
           'alexandravalencia.traveladvisor@gmail.com'
         const subj = 'Question about: 7-Night Caribbean Cruise (Celebrity)'
-        const body = `Hi LEXVOYAGE,%0D%0A%0D%0AMy name is ${
+        const body = `Dear LEXVOYAGE,%0D%0A%0D%0AMy name is ${
           encodeURIComponent(currentLead?.name || '')
         }. I have a question about this proposal.%0D%0A`
         return `mailto:${inbox}?subject=${encodeURIComponent(subj)}&body=${body}`
