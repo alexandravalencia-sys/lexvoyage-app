@@ -46,51 +46,65 @@ const ButtonOutline = ({ children, className = '', ...props }) => (
 
 export default function AppShell() {
   const [view, setView] = useState('home') // 'home' | 'quote' | 'proposal' | 'login' | 'vault'
-  const [lead, setLead] = useState(null)   // last submitted lead (for Proposal "Client brief")
+  const [lead, setLead] = useState(null)
   const [user, setUser] = useState(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const supabase = getSupabase()
+  const go = (v) => () => {
+    setView(v)
+    setMobileOpen(false)
+  }
 
-  // auth listener (guarded if supabase not configured yet)
+  // auth listener
   useEffect(() => {
     if (!supabase) return
     let mounted = true
-
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return
       setUser(data?.user ?? null)
     })
-
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
       if (!mounted) return
       setUser(session?.user ?? null)
     })
-
     return () => {
       mounted = false
       sub?.subscription?.unsubscribe?.()
     }
   }, [supabase])
 
-  const go = (v) => () => setView(v)
-
   return (
     <div className="min-h-screen bg-[#F5F7F6]">
       {/* Top bar */}
-      <div className="bg-[#0e2c25] text-white sticky top-0 z-20">
+      <div className="bg-[#0e2c25] text-white sticky top-0 z-30">
         <Section className="py-4">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* Logo/title now clickable to go Home */}
+            <button onClick={go('home')} className="flex items-center gap-3">
               <Image src="/logo.png" alt="LEXVOYAGE" width={34} height={34} />
               <span className="text-xl font-semibold tracking-wide">LEXVOYAGE</span>
-            </div>
-            <nav className="hidden sm:flex gap-4">
+            </button>
+
+            {/* Desktop nav */}
+            <nav className="hidden md:flex gap-4">
               <NavLink active={view === 'home'} onClick={go('home')}>Home</NavLink>
               <NavLink active={view === 'quote'} onClick={go('quote')}>Request a Quote</NavLink>
               <NavLink active={view === 'proposal'} onClick={go('proposal')}>Proposal</NavLink>
               <NavLink active={view === 'vault'} onClick={go('vault')}>Itinerary Vault</NavLink>
             </nav>
-            <div className="ml-auto">
+
+            {/* Mobile hamburger */}
+            <button
+              className="ml-auto md:hidden rounded-lg px-3 py-2 bg-white/10 hover:bg-white/15"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+            >
+              ☰
+            </button>
+
+            {/* Right side auth on desktop */}
+            <div className="ml-auto hidden md:block">
               {supabase ? (
                 user ? (
                   <ButtonOutline
@@ -110,6 +124,55 @@ export default function AppShell() {
             </div>
           </div>
         </Section>
+
+        {/* Mobile slide-over menu */}
+        {mobileOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40"
+              onClick={() => setMobileOpen(false)}
+            />
+            <div className="fixed top-0 right-0 h-full w-72 bg-[#0e2c25] z-50 p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-semibold">Menu</span>
+                <button
+                  className="rounded-md px-2 py-1 bg-white/10 hover:bg-white/15"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Close menu"
+                >
+                  ✕
+                </button>
+              </div>
+              <MobileLink onClick={go('home')} active={view === 'home')}>Home</MobileLink>
+              <MobileLink onClick={go('quote')} active={view === 'quote')}>Request a Quote</MobileLink>
+              <MobileLink onClick={go('proposal')} active={view === 'proposal')}>Proposal</MobileLink>
+              <MobileLink onClick={go('vault')} active={view === 'vault')}>Itinerary Vault</MobileLink>
+
+              <div className="mt-4 border-t border-white/10 pt-4">
+                {supabase ? (
+                  user ? (
+                    <ButtonOutline
+                      className="w-full"
+                      onClick={async () => {
+                        await supabase.auth.signOut()
+                        setView('home')
+                        setMobileOpen(false)
+                      }}
+                    >
+                      Sign out
+                    </ButtonOutline>
+                  ) : (
+                    <ButtonOutline className="w-full" onClick={go('login')}>
+                      Client Login
+                    </ButtonOutline>
+                  )
+                ) : (
+                  <span className="text-white/70 text-sm">Login unavailable</span>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Header band */}
@@ -172,6 +235,20 @@ function NavLink({ active, children, ...props }) {
   )
 }
 
+function MobileLink({ active, children, ...props }) {
+  return (
+    <button
+      className={
+        'w-full text-left px-3 py-2 rounded-md transition ' +
+        (active ? 'bg-white/15' : 'hover:bg-white/10')
+      }
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
 /* --------------------------------- Home ---------------------------------- */
 
 function Home({ go }) {
@@ -225,9 +302,7 @@ function QuoteForm({ onSubmitted }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const set = (k) => (e) =>
-    setForm((f) => ({ ...f, [k]: e?.target?.value ?? e }))
-
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e?.target?.value ?? e }))
   const toggleInterest = (tag) =>
     setForm((f) => {
       const has = f.interests.includes(tag)
@@ -264,40 +339,18 @@ function QuoteForm({ onSubmitted }) {
       </p>
 
       <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4">
-        <L label="Full name">
-          <input className="input" required value={form.name} onChange={set('name')} />
-        </L>
-        <L label="Email">
-          <input className="input" required type="email" value={form.email} onChange={set('email')} />
-        </L>
-
-        <L label="Phone (optional)">
-          <input className="input" value={form.phone} onChange={set('phone')} />
-        </L>
+        <L label="Full name"><input className="input" required value={form.name} onChange={set('name')} /></L>
+        <L label="Email"><input className="input" required type="email" value={form.email} onChange={set('email')} /></L>
+        <L label="Phone (optional)"><input className="input" value={form.phone} onChange={set('phone')} /></L>
         <L label="Dates / flexibility">
-          <input
-            className="input"
-            placeholder="e.g., 12–19 Oct (±3 days)"
-            value={form.dates}
-            onChange={set('dates')}
-          />
+          <input className="input" placeholder="e.g., 12–19 Oct (±3 days)" value={form.dates} onChange={set('dates')} />
         </L>
-
-        <L label="Adults">
-          <input className="input" type="number" min="1" value={form.adults} onChange={set('adults')} />
-        </L>
-        <L label="Children">
-          <input className="input" type="number" min="0" value={form.children} onChange={set('children')} />
-        </L>
-
-        <L label="Budget (total)">
-          <input className="input" placeholder="e.g., £3,000" value={form.budget} onChange={set('budget')} />
-        </L>
+        <L label="Adults"><input className="input" type="number" min="1" value={form.adults} onChange={set('adults')} /></L>
+        <L label="Children"><input className="input" type="number" min="0" value={form.children} onChange={set('children')} /></L>
+        <L label="Budget (total)"><input className="input" placeholder="e.g., £3,000" value={form.budget} onChange={set('budget')} /></L>
         <L label="Style">
           <select className="input" value={form.style} onChange={set('style')}>
-            {['Luxury', 'Boutique', 'Family', 'Adventure'].map((x) => (
-              <option key={x}>{x}</option>
-            ))}
+            {['Luxury', 'Boutique', 'Family', 'Adventure'].map((x) => <option key={x}>{x}</option>)}
           </select>
         </L>
 
@@ -324,9 +377,7 @@ function QuoteForm({ onSubmitted }) {
         </div>
 
         <div className="sm:col-span-2 flex items-center gap-3">
-          <Button disabled={submitting} type="submit">
-            {submitting ? 'Submitting…' : 'Submit'}
-          </Button>
+          <Button disabled={submitting} type="submit">{submitting ? 'Submitting…' : 'Submit'}</Button>
           {error && <span className="text-red-600 text-sm">{error}</span>}
         </div>
       </form>
@@ -337,7 +388,9 @@ function QuoteForm({ onSubmitted }) {
 /* -------------------------------- Proposal ------------------------------- */
 
 function Proposal({ lead }) {
-  // Sample supplier card
+  // image fallback state
+  const [imgError, setImgError] = useState(false)
+
   const sample = useMemo(
     () => ({
       title: '7-Night Caribbean Cruise (Celebrity)',
@@ -356,14 +409,14 @@ function Proposal({ lead }) {
         cta: 'Book Now',
         url:
           process.env.NEXT_PUBLIC_BOOK_URL ||
-          'https://alexandravalencia.inteletravel.uk/booktravel.cfm',
+          'https://www.celebritycruises.co.uk',
       },
       askTo: (currentLead) => {
         const inbox =
           process.env.NEXT_PUBLIC_SALES_INBOX ||
           'alexandravalencia.traveladvisor@gmail.com'
         const subj = 'Question about: 7-Night Caribbean Cruise (Celebrity)'
-        const body = `Dear LEXVOYAGE,%0D%0A%0D%0AMy name is ${
+        const body = `Hi LEXVOYAGE,%0D%0A%0D%0AMy name is ${
           encodeURIComponent(currentLead?.name || '')
         }. I have a question about this proposal.%0D%0A`
         return `mailto:${inbox}?subject=${encodeURIComponent(subj)}&body=${body}`
@@ -376,9 +429,21 @@ function Proposal({ lead }) {
     <div className="grid lg:grid-cols-[1fr_380px] gap-8">
       <Card className="overflow-hidden">
         <div className="aspect-[21/9] w-full relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={sample.img} alt="" className="w-full h-full object-cover" />
+          {!imgError ? (
+            <Image
+              src={sample.img}
+              alt="Caribbean cruise"
+              fill
+              sizes="(max-width: 1024px) 100vw, 800px"
+              className="object-cover"
+              onError={() => setImgError(true)}
+              priority
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#e7e4d6] to-[#cfe0d7]" />
+          )}
         </div>
+
         <div className="p-6">
           <h3 className="text-2xl font-serif">{sample.title}</h3>
           <p className="text-black/70 mt-1">{sample.price}</p>
@@ -393,12 +458,7 @@ function Proposal({ lead }) {
           </ul>
 
           <div className="mt-6 flex gap-3">
-            <a
-              href={sample.supplier.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block"
-            >
+            <a href={sample.supplier.url} target="_blank" rel="noreferrer" className="inline-block">
               <Button>{sample.supplier.cta}</Button>
             </a>
             <a href={sample.askTo(lead || {})} className="inline-block">
@@ -416,16 +476,10 @@ function Proposal({ lead }) {
         <dl className="space-y-3 text-sm">
           <BriefRow label="Name" value={lead?.name || '—'} />
           <BriefRow label="Dates" value={lead?.dates || '—'} />
-          <BriefRow
-            label="Travellers"
-            value={`${lead?.adults ?? '?'} adults, ${lead?.children ?? 0} children`}
-          />
+          <BriefRow label="Travellers" value={`${lead?.adults ?? '?'} adults, ${lead?.children ?? 0} children`} />
           <BriefRow label="Budget" value={lead?.budget || '—'} />
           <BriefRow label="Style" value={lead?.style || '—'} />
-          <BriefRow
-            label="Interests"
-            value={(lead?.interests || []).join(', ') || '—'}
-          />
+          <BriefRow label="Interests" value={(lead?.interests || []).join(', ') || '—'} />
         </dl>
       </Card>
     </div>
@@ -507,8 +561,7 @@ function ItineraryVault({ user }) {
   async function refresh() {
     if (!s || !user) return
     setLoading(true)
-    const { data, error } = await s
-      .storage
+    const { data, error } = await s.storage
       .from('documents')
       .list(user.id, { sortBy: { column: 'created_at', order: 'desc' } })
     if (!error) setFiles(data || [])
