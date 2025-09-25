@@ -42,6 +42,11 @@ const ButtonOutline = ({ children, className = '', ...props }) => (
   </button>
 )
 
+/* Reusable input class (no styled-jsx needed) */
+const inputCls =
+  'w-full rounded-xl border border-black/10 bg-white px-3 py-2 outline-none ' +
+  'focus:ring-2 focus:ring-[#134231] focus:border-[#134231]'
+
 /* --------------------------------- Shell --------------------------------- */
 
 export default function AppShell() {
@@ -51,12 +56,13 @@ export default function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const supabase = getSupabase()
+
   const go = (v) => () => {
     setView(v)
     setMobileOpen(false)
   }
 
-  // auth listener
+  // Auth listener
   useEffect(() => {
     if (!supabase) return
     let mounted = true
@@ -80,7 +86,7 @@ export default function AppShell() {
       <div className="bg-[#0e2c25] text-white sticky top-0 z-30">
         <Section className="py-4">
           <div className="flex items-center gap-4">
-            {/* Logo/title now clickable to go Home */}
+            {/* Logo/title → Home */}
             <button onClick={go('home')} className="flex items-center gap-3">
               <Image src="/logo.png" alt="LEXVOYAGE" width={34} height={34} />
               <span className="text-xl font-semibold tracking-wide">LEXVOYAGE</span>
@@ -103,7 +109,7 @@ export default function AppShell() {
               ☰
             </button>
 
-            {/* Right side auth on desktop */}
+            {/* Right side auth (desktop) */}
             <div className="ml-auto hidden md:block">
               {supabase ? (
                 user ? (
@@ -143,11 +149,11 @@ export default function AppShell() {
                   ✕
                 </button>
               </div>
+
               <MobileLink onClick={go('home')}     active={view === 'home'}>Home</MobileLink>
               <MobileLink onClick={go('quote')}    active={view === 'quote'}>Request a Quote</MobileLink>
               <MobileLink onClick={go('proposal')} active={view === 'proposal'}>Proposal</MobileLink>
               <MobileLink onClick={go('vault')}    active={view === 'vault'}>Itinerary Vault</MobileLink>
-
 
               <div className="mt-4 border-t border-white/10 pt-4">
                 {supabase ? (
@@ -340,17 +346,17 @@ function QuoteForm({ onSubmitted }) {
       </p>
 
       <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4">
-        <L label="Full name"><input className="input" required value={form.name} onChange={set('name')} /></L>
-        <L label="Email"><input className="input" required type="email" value={form.email} onChange={set('email')} /></L>
-        <L label="Phone (optional)"><input className="input" value={form.phone} onChange={set('phone')} /></L>
+        <L label="Full name"><input className={inputCls} required value={form.name} onChange={set('name')} /></L>
+        <L label="Email"><input className={inputCls} required type="email" value={form.email} onChange={set('email')} /></L>
+        <L label="Phone (optional)"><input className={inputCls} value={form.phone} onChange={set('phone')} /></L>
         <L label="Dates / flexibility">
-          <input className="input" placeholder="e.g., 12–19 Oct (±3 days)" value={form.dates} onChange={set('dates')} />
+          <input className={inputCls} placeholder="e.g., 12–19 Oct (±3 days)" value={form.dates} onChange={set('dates')} />
         </L>
-        <L label="Adults"><input className="input" type="number" min="1" value={form.adults} onChange={set('adults')} /></L>
-        <L label="Children"><input className="input" type="number" min="0" value={form.children} onChange={set('children')} /></L>
-        <L label="Budget (total)"><input className="input" placeholder="e.g., £3,000" value={form.budget} onChange={set('budget')} /></L>
+        <L label="Adults"><input className={inputCls} type="number" min="1" value={form.adults} onChange={set('adults')} /></L>
+        <L label="Children"><input className={inputCls} type="number" min="0" value={form.children} onChange={set('children')} /></L>
+        <L label="Budget (total)"><input className={inputCls} placeholder="e.g., £3,000" value={form.budget} onChange={set('budget')} /></L>
         <L label="Style">
-          <select className="input" value={form.style} onChange={set('style')}>
+          <select className={inputCls} value={form.style} onChange={set('style')}>
             {['Luxury', 'Boutique', 'Family', 'Adventure'].map((x) => <option key={x}>{x}</option>)}
           </select>
         </L>
@@ -389,14 +395,13 @@ function QuoteForm({ onSubmitted }) {
 /* -------------------------------- Proposal ------------------------------- */
 
 function Proposal({ lead }) {
-  // image fallback state
-  const [imgError, setImgError] = useState(false)
+  // Always use your local hero image
+  const HERO_LOCAL = '/hero-cruise.jpg'
 
   const sample = useMemo(
     () => ({
       title: '7-Night Caribbean Cruise (Celebrity)',
       price: 'from £1,499 pp',
-      img: 'https://images.unsplash.com/photo-1526635090919-32716cdd4a8b?q=80&w=1400&auto=format&fit=crop',
       inclusions: [
         'Flights from London',
         'All-inclusive dining',
@@ -406,11 +411,10 @@ function Proposal({ lead }) {
       terms:
         'Subject to availability. Pricing may vary by date and cabin category. Supplier T&Cs apply.',
       supplier: {
-        name: 'Celebrity Central',
+        name: 'InteleTravel',
         cta: 'Book Now',
-        url:
-          process.env.NEXT_PUBLIC_BOOK_URL ||
-          'https://www.celebritycruises.co.uk',
+        // 👉 per your request, send users here:
+        url: 'https://alexandravalencia.inteletravel.uk/booktravel.cfm',
       },
       askTo: (currentLead) => {
         const inbox =
@@ -430,19 +434,20 @@ function Proposal({ lead }) {
     <div className="grid lg:grid-cols-[1fr_380px] gap-8">
       <Card className="overflow-hidden">
         <div className="aspect-[21/9] w-full relative">
-          {!imgError ? (
-            <Image
-              src={sample.img}
-              alt="Caribbean cruise"
-              fill
-              sizes="(max-width: 1024px) 100vw, 800px"
-              className="object-cover"
-              onError={() => setImgError(true)}
-              priority
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#e7e4d6] to-[#cfe0d7]" />
-          )}
+          <Image
+            src={HERO_LOCAL}
+            alt="LEXVOYAGE hero"
+            fill
+            sizes="(max-width: 1024px) 100vw, 800px"
+            className="object-cover"
+            priority
+          />
+          {/* Optional subtle brand text so a dark image never looks empty */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-white/60 text-4xl sm:text-5xl font-serif tracking-wider">
+              LEXVOYAGE
+            </span>
+          </div>
         </div>
 
         <div className="p-6">
@@ -535,7 +540,7 @@ function LoginCard() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input flex-1"
+            className={`${inputCls} flex-1`}
             placeholder="you@example.com"
           />
           <Button type="submit">Send link</Button>
@@ -645,12 +650,6 @@ function L({ label, children }) {
     <label className="block">
       <span className="block text-sm font-medium mb-1">{label}</span>
       {children}
-      <style jsx>{`
-        .input {
-          @apply w-full rounded-xl border border-black/10 bg-white px-3 py-2 outline-none
-                 focus:ring-2 focus:ring-[#134231] focus:border-[#134231];
-        }
-      `}</style>
     </label>
   )
 }
