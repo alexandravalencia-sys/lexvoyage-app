@@ -143,10 +143,11 @@ export default function AppShell() {
                   ✕
                 </button>
               </div>
-              <MobileLink onClick={go('home')} active={view === 'home')}>Home</MobileLink>
-              <MobileLink onClick={go('quote')} active={view === 'quote')}>Request a Quote</MobileLink>
-              <MobileLink onClick={go('proposal')} active={view === 'proposal')}>Proposal</MobileLink>
-              <MobileLink onClick={go('vault')} active={view === 'vault')}>Itinerary Vault</MobileLink>
+              <MobileLink onClick={go('home')}     active={view === 'home'}>Home</MobileLink>
+              <MobileLink onClick={go('quote')}    active={view === 'quote'}>Request a Quote</MobileLink>
+              <MobileLink onClick={go('proposal')} active={view === 'proposal'}>Proposal</MobileLink>
+              <MobileLink onClick={go('vault')}    active={view === 'vault'}>Itinerary Vault</MobileLink>
+
 
               <div className="mt-4 border-t border-white/10 pt-4">
                 {supabase ? (
